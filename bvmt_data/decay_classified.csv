@@ -1,0 +1,9 @@
+symbole,ticker_name,baseline_volume,recent_volume,decline_ratio,last_active_date,days_since_active,status,matched_headline,matched_news_date,category
+SITS,SITS,472778,8360,0.0176827178929645,2026-06-15,2,UNEXPLAINED,,,
+PLTU,PLACEMENTS DE TUNISIE - SICAF,40255,6652,0.1652465532232021,2026-06-10,7,UNEXPLAINED,,,
+SOTEM,SOTEMAIL,172,2742,15.94186046511628,2026-01-02,166,UNEXPLAINED,,,
+GIF,GIF FILTER,0,0,,2024-10-22,603,EXPLAINED,La Bourse de Tunis décide la radiation de la société GIF FILTER,2024-11-12,delisting_radiation
+LSTR,ELECTROSTAR,0,0,,2024-07-22,695,EXPLAINED,"En cessation de paiement, le Tribunal déclare la faillite de la société ELECTROSTAR",2024-07-24,bankruptcy_distress
+MIP,MIP,0,0,,2024-07-29,688,EXPLAINED,La société MIP a réalisé un chiffre d'affaires de 800 dinars en 2022,2024-08-01,earnings_results
+SERVI,SERVICOM,0,0,,2023-11-30,930,EXPLAINED,Suspension de la cotation du titre SERVICOM,2024-01-11,suspension
+SOPAT,SOPAT,0,0,,2023-10-31,960,EXPLAINED,"SOPAT : L'Offre Publique de Retrait sera ouverte le 11 octobre à un prix de 2,050 dinars l'action",2023-10-09,buyout_opr

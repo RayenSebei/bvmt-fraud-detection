@@ -1,0 +1,8 @@
+symbole,ticker_name,event_date,category,notes
+TINV,Tuninvest SICAR,2025-10-06,insider_trading_suspected,Abnormal buying ~1 week before exceptional quarterly results; CMF lacked quorum to investigate. Caught by spike detector.
+UADH,UADH,2026-03-24,disclosure_opacity,"Suspended for non-publication of accounts, no AGO, no identifiable management. NO volume fade detected beforehand — invisible to decay signal."
+GIF,GIF Filter,2024-10-25,bankruptcy_distress,"Suspended on bankruptcy ruling (22 Oct 2024); judicial restructuring opened 2022 after unpaid wages, revenue down 85% YoY by mid-2022."
+LSTR,Electrostar,2024-07-23,bankruptcy_distress,"Suspended on bankruptcy ruling (payment default since July 2023); 32M TND net loss in 2021, multiple cancelled capital increases."
+SERVI,Servicom,2024-01-11,bankruptcy_distress,"CEO left Aug 2022 with no successor (governance vacuum, echoes UADH); bankruptcy declared March 2024."
+MIP,Maghreb International Publicite,2024-09-10,unknown_cause,"Radiated same day as Electrostar; specific cause not found in press coverage yet — treat as exploratory, needs more research."
+SOPAT,SOPAT,2023-09-20,benign_delisting_buyout,NEGATIVE CONTROL. Majority shareholder (>95%) launched buyout offer while company was profitable (+7x profit in 2023). NOT distress — tests whether the detector can be fooled by a benign delisting.
