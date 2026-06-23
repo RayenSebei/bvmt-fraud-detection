@@ -21,19 +21,19 @@ Emerging markets often have thinner liquidity, fewer analysts, and slower public
 
 ## Architecture
 ```text
-scrape_ilboursa.py  ->  scrape_news.py
-        |                    |
-        v                    v
-   anomaly_detector.py   crossref_legal_events.py
-        |                    |
-        v                    v
-     decay_detector.py  -> classify_anomalies.py
-                \            /
-                 v          v
-              refine_watchlist.py
-                      |
-                      v
-                ai_triage_free.py
+src/scraping/scrape_ilboursa.py  ->  src/scraping/scrape_news.py
+        |                             |
+        v                             v
+src/detection/anomaly_detector.py   src/detection/crossref_legal_events.py
+        |                             |
+        v                             v
+src/detection/decay_detector.py  -> src/validation/classify_anomalies.py
+          \                         /
+           v                       v
+      src/validation/refine_watchlist.py
+               |
+               v
+         src/triage/ai_triage_free.py
 ```
 
 ## Repository Structure
@@ -52,12 +52,11 @@ scrape_ilboursa.py  ->  scrape_news.py
 │   ├── triage/
 │   └── validation/
 ├── bvmt_data/
-├── *.py
 ├── requirements.txt
 └── README.md
 ```
 
-Legacy scripts currently live at the repository root for continuity, but the structure above is the recommended GitHub layout for future refactoring.
+The runnable Python entry points now live under `src/`.
 
 ## Installation
 ### Conda environment
@@ -87,43 +86,43 @@ Run the pipeline phases in order:
 
 1. **Scrape market data**
    ```bash
-   python scrape_ilboursa.py
+   python src/scraping/scrape_ilboursa.py
    ```
 
 2. **Scrape ticker news**
    ```bash
-   python scrape_news.py
+   python src/scraping/scrape_news.py
    ```
 
 3. **Detect spike anomalies**
    ```bash
-   python anomaly_detector.py
+   python src/detection/anomaly_detector.py
    ```
 
 4. **Detect decay/fade patterns**
    ```bash
-   python decay_detector.py
+   python src/detection/decay_detector.py
    ```
 
 5. **Cross-check legal or event context**
    ```bash
-   python crossref_legal_events.py
+   python src/detection/crossref_legal_events.py
    ```
 
 6. **Refine the watchlist**
    ```bash
-   python refine_watchlist.py
+   python src/validation/refine_watchlist.py
    ```
 
 7. **Run AI-assisted triage**
    ```bash
-   python ai_triage_free.py
+   python src/triage/ai_triage_free.py
    ```
 
 8. **Classify and validate cases**
    ```bash
-   python classify_anomalies.py
-   python validate_distress_cases.py
+   python src/validation/classify_anomalies.py
+   python src/validation/validate_distress_cases.py
    ```
 
 Output files are written primarily under `bvmt_data/`.
@@ -150,4 +149,4 @@ These cases were used to sanity-check whether the detectors surfaced plausible e
 - Future work could add alternative detectors, event-study statistics, and a more structured labeling workflow.
 
 ## License
-Add your preferred open-source license here before publishing. If you want a default, MIT is a common choice for research code.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for the full text.

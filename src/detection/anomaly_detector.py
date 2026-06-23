@@ -23,7 +23,7 @@ anomaly." Phase 2 will cross-reference BVMT's avis-décisions bulletin
 to auto-distinguish explained vs unexplained spikes.
 
 Usage:
-    python anomaly_detector.py
+    python src/detection/anomaly_detector.py
 Reads bvmt_data/_all_tickers_combined.csv, writes:
     bvmt_data/anomaly_flags.csv      (every flagged ticker/date)
     bvmt_data/anomaly_summary.csv    (one row per ticker, flag counts)
@@ -97,9 +97,21 @@ def summarize(df):
 
     summary = (
         flagged.groupby("symbole")
-        import runpy
+        .agg(
+            ticker_name=("ticker_name", "first"),
+            volume_anomalies=("volume_anomaly", "sum"),
+            price_anomalies=("price_anomaly", "sum"),
+            combined_anomalies=("combined_anomaly", "sum"),
+            first_flag=("date", "min"),
+            last_flag=("date", "max"),
+        )
+        .reset_index()
+        .sort_values("combined_anomalies", ascending=False)
+    )
+    return flagged, summary
 
-        runpy.run_module("src.detection.anomaly_detector", run_name="__main__")
+
+if __name__ == "__main__":
     print("Loading and cleaning data...")
     df = load_data(DATA_PATH)
     print(f"  {df['symbole'].nunique()} tickers, {len(df)} rows after exclusions")
