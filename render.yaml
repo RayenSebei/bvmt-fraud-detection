@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: bvmt-dashboard
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: DATA_DIR
+        value: ./data/bvmt_data
+      - key: SCRAPER_SCRIPT
+        value: ./scraper/run_pipeline.py
+      - key: PYTHON_VERSION
+        value: 3.11.0

@@ -1,8 +1,4 @@
-pandas
-numpy
-requests
-beautifulsoup4
-python-dotenv
-openai
-scikit-learn
-lxml
+flask==3.0.3
+flask-cors==4.0.1
+pandas==2.2.2
+gunicorn==22.0.0

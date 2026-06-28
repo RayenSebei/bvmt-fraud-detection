@@ -9,3 +9,7 @@ dist/
 build/
 outputs/
 bvmt_quality_report.txt
+.venv/
+venv/
+*.log
+bvmt-dashboard/

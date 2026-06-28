@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BVMT Market Surveillance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:       #0f1117;
+  --surface:  #171923;
+  --card:     #1e2130;
+  --border:   rgba(255,255,255,0.07);
+  --text:     #e8eaf0;
+  --muted:    #6b7280;
+  --accent:   #3b82f6;
+  --green:    #10b981;
+  --red:      #ef4444;
+  --amber:    #f59e0b;
+  --radius:   10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.sidebar-logo h1{font-size:15px;font-weight:600;color:var(--text)}
+.sidebar-logo p{font-size:11px;color:var(--muted);margin-top:3px}
+.nav-section{padding:12px 20px 4px;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;cursor:pointer;color:var(--muted);font-size:13px;border-left:2px solid transparent;transition:all .15s}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(59,130,246,.06)}
+.nav-item .icon{width:16px;text-align:center;opacity:.7}
+
+.main{padding:24px;overflow-y:auto}
+
+/* Topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:gap}
+.topbar-left h2{font-size:20px;font-weight:600}
+.topbar-left p{font-size:12px;color:var(--muted);margin-top:2px}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500;white-space:nowrap}
+.badge.green{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.2)}
+.badge.amber{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.badge.red{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.badge.blue{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.pulse{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.kpi .val{font-size:28px;font-weight:600;line-height:1;letter-spacing:-.5px}
+.kpi .delta{font-size:12px;color:var(--muted);margin-top:5px}
+.kpi .delta.up{color:var(--green)}.kpi .delta.down{color:var(--red)}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;background:rgba(255,255,255,.05);padding:3px;border-radius:8px}
+.tab{padding:4px 12px;font-size:12px;border-radius:6px;cursor:pointer;color:var(--muted);border:none;background:transparent;font-family:inherit;transition:all .15s}
+.tab.active{background:var(--accent);color:#fff;font-weight:500}
+.tab:hover:not(.active){color:var(--text)}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:0 10px 10px 0;border-bottom:1px solid var(--border)}
+td{padding:10px 10px 10px 0;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* Ticker pill */
+.ticker-pill{font-weight:600;font-family:monospace;font-size:12px;color:#60a5fa;background:rgba(59,130,246,.12);padding:2px 8px;border-radius:5px;display:inline-block}
+
+/* Z-score bar */
+.zbar{display:flex;align-items:center;gap:8px}
+.zbar-bg{width:64px;height:5px;border-radius:3px;background:rgba(255,255,255,.08);flex-shrink:0}
+.zbar-fill{height:5px;border-radius:3px}
+
+/* Risk chips */
+.chip{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:500}
+.chip.high{background:rgba(239,68,68,.15);color:#f87171}
+.chip.med{background:rgba(245,158,11,.15);color:#fbbf24}
+.chip.low{background:rgba(16,185,129,.15);color:#34d399}
+.chip.explained{background:rgba(59,130,246,.15);color:#60a5fa}
+
+/* News items */
+.news-feed{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+.news-item{padding:10px 12px;border-radius:8px;background:rgba(255,255,255,.03);border-left:3px solid;cursor:pointer;transition:background .15s}
+.news-item:hover{background:rgba(255,255,255,.06)}
+.news-item.hi{border-color:var(--red)}.news-item.med{border-color:var(--amber)}.news-item.lo{border-color:var(--green)}
+.news-title{font-size:13px;font-weight:500;margin-bottom:3px;line-height:1.4}
+.news-meta{font-size:11px;color:var(--muted)}
+
+/* Chart wrapper */
+.chart-wrap{position:relative;width:100%}
+
+/* Search page */
+.search-box{display:flex;gap:10px;margin-bottom:20px}
+.search-box input{flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;outline:none}
+.search-box input:focus{border-color:var(--accent)}
+.search-box button{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:500}
+.search-box button:hover{background:#2563eb}
+
+/* Stock info panel */
+.stock-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.meta-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.meta-item .ml{font-size:11px;color:var(--muted);margin-bottom:4px}
+.meta-item .mv{font-size:18px;font-weight:600}
+
+/* Pages */
+.page{display:none}.page.active{display:block}
+
+/* Scraper status bar */
+.scraper-bar{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.scraper-bar.success{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.2)}
+.scraper-bar.error{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2)}
+
+/* Sector bars */
+.sector-row{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:10px}
+.sector-label{width:90px;color:var(--muted);font-size:12px;flex-shrink:0}
+.sector-bg{flex:1;height:5px;background:rgba(255,255,255,.07);border-radius:3px}
+.sector-fill{height:5px;border-radius:3px;background:var(--accent)}
+.sector-pct{width:32px;text-align:right;font-size:12px;font-weight:500;color:var(--accent)}
+
+/* Skeleton loader */
+.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 100%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;height:14px;margin:4px 0}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Timeline chart height */
+#timelineChart{height:200px!important}
+#stockChart{height:260px!important}
+#newsChart{height:180px!important}
+
+/* Empty state */
+.empty{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+.empty .big{font-size:32px;margin-bottom:8px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+
+/* Responsive */
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>BVMT Surveillance</h1>
+      <p>Market Fraud Detection</p>
+    </div>
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="showPage('overview',this)">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('anomalies',this)">
+      <span class="icon">🚨</span> Anomaly Feed
+    </div>
+    <div class="nav-section">Research</div>
+    <div class="nav-item" onclick="showPage('search',this)">
+      <span class="icon">🔍</span> Stock Search
+    </div>
+    <div class="nav-item" onclick="showPage('news',this)">
+      <span class="icon">📰</span> News Feed
+    </div>
+    <div class="nav-section">System</div>
+    <div class="nav-item" onclick="showPage('pipeline',this)">
+      <span class="icon">⚙️</span> Pipeline Status
+    </div>
+    <div style="flex:1"></div>
+    <div style="padding:16px 20px;border-top:1px solid var(--border)">
+      <div id="sidebar-status" style="font-size:11px;color:var(--muted)">Loading...</div>
+      <div id="sidebar-time" style="font-size:10px;color:var(--muted);margin-top:2px"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- SCRAPER BAR -->
+    <div id="scraper-bar" class="scraper-bar" style="display:none">
+      <span id="scraper-msg">🔄 Checking for new data...</span>
+      <span id="scraper-time" style="color:var(--muted)"></span>
+    </div>
+
+    <!-- ═══════════════════════════════ PAGE: OVERVIEW ═══════════════════ -->
+    <div id="page-overview" class="page active">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>Market Surveillance</h2>
+          <p>Bourse des Valeurs Mobilières de Tunis · Real data from ilboursa.com</p>
+        </div>
+        <div class="topbar-right">
+          <span id="badge-flagged" class="badge amber"><span class="pulse"></span> Loading...</span>
+          <span id="badge-status" class="badge green"><span class="pulse"></span> Pipeline active</span>
+        </div>
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi"><div class="label">Tickers monitored</div><div class="val" id="kpi-tickers">—</div><div class="delta">All BVMT sectors</div></div>
+        <div class="kpi"><div class="label">News cross-refs</div><div class="val" id="kpi-news">—</div><div class="delta up" id="kpi-news-delta">scraped from ilboursa</div></div>
+        <div class="kpi"><div class="label">Flagged (30d)</div><div class="val" id="kpi-flagged">—</div><div class="delta">combined anomalies</div></div>
+        <div class="kpi"><div class="label">News-explained</div><div class="val" id="kpi-triage">—</div><div class="delta" id="kpi-triage-delta">of classified anomalies</div></div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Daily anomaly count · last 90 days</span>
+          </div>
+          <div class="chart-wrap" style="height:200px">
+            <canvas id="timelineChart" role="img" aria-label="Daily anomaly count over 90 days"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Top flagged tickers</span></div>
+          <div id="top-tickers-list" style="display:flex;flex-direction:column;gap:8px">
+            <div class="skeleton" style="height:20px"></div>
+            <div class="skeleton" style="height:20px"></div>
+            <div class="skeleton" style="height:20px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Latest news</span>
+            <span class="badge blue" onclick="showPage('news',document.querySelector('[onclick*=news]'))">View all</span>
+          </div>
+          <div id="home-news" class="news-feed"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Anomaly status breakdown</span>
+          </div>
+          <div class="chart-wrap" style="height:180px">
+            <canvas id="statusChart" role="img" aria-label="Anomaly status breakdown pie chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════ PAGE: ANOMALIES ══════════════════ -->
+    <div id="page-anomalies" class="page">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>Anomaly Feed</h2>
+          <p>Sorted by highest z-score · real-time from your pipeline</p>
+        </div>
+        <div class="topbar-right">
+          <div class="tabs">
+            <button class="tab active" onclick="filterAnomalies('all',this)">All</button>
+            <button class="tab" onclick="filterAnomalies('High',this)">High risk</button>
+            <button class="tab" onclick="filterAnomalies('UNEXPLAINED',this)">Unexplained</button>
+            <button class="tab" onclick="filterAnomalies('NEWS_EXPLAINED',this)">Explained</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Date</th>
+                <th>Volume Z</th>
+                <th>Return Z</th>
+                <th>Signal</th>
+                <th>Risk</th>
+                <th>Status</th>
+                <th>News match</th>
+              </tr>
+            </thead>
+            <tbody id="anomaly-tbody">
+              <tr><td colspan="8"><div class="skeleton"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════ PAGE: STOCK SEARCH ═══════════════ -->
+    <div id="page-search" class="page">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>Stock Search</h2>
+          <p>Search any BVMT ticker — OHLCV history + anomaly overlay + news</p>
+        </div>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="stock-input" placeholder="Enter ticker symbol (e.g. BIAT, ATB, SFBT...)" list="tickers-list" autocomplete="off">
+        <datalist id="tickers-list"></datalist>
+        <button onclick="searchStock()">Search</button>
+      </div>
+
+      <div id="stock-result" style="display:none">
+        <div id="stock-header" style="margin-bottom:16px">
+          <h3 id="stock-name" style="font-size:18px;font-weight:600"></h3>
+          <p id="stock-sub" style="font-size:12px;color:var(--muted);margin-top:3px"></p>
+        </div>
+        <div class="stock-meta">
+          <div class="meta-item"><div class="ml">Last close</div><div class="mv" id="sm-close">—</div></div>
+          <div class="meta-item"><div class="ml">Last volume</div><div class="mv" id="sm-vol">—</div></div>
+          <div class="meta-item"><div class="ml">52w high</div><div class="mv" id="sm-high">—</div></div>
+          <div class="meta-item"><div class="ml">52w low</div><div class="mv" id="sm-low">—</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><span class="card-title">Price history · last 252 trading days</span><span style="font-size:11px;color:var(--red)">🔴 = anomaly day</span></div>
+            <div class="chart-wrap" style="height:260px">
+              <canvas id="stockChart" role="img" aria-label="Stock price history chart"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Volume history</span></div>
+            <div class="chart-wrap" style="height:260px">
+              <canvas id="volChart" role="img" aria-label="Volume history chart"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-head"><span class="card-title">News for this ticker</span></div>
+          <div id="stock-news" class="news-feed"></div>
+        </div>
+      </div>
+      <div id="stock-empty" class="empty">
+        <div class="big">🔍</div>
+        Enter a ticker symbol above to view its full history, anomaly overlay, and related news.
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════ PAGE: NEWS ═══════════════════════ -->
+    <div id="page-news" class="page">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>News Feed</h2>
+          <p>All scraped news from ilboursa.com · sorted by date</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card" style="grid-column:1/-1">
+          <div class="card-head">
+            <span class="card-title">Latest <span id="news-count"></span> items</span>
+          </div>
+          <div id="all-news" class="news-feed" style="max-height:600px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════ PAGE: PIPELINE ═══════════════════ -->
+    <div id="page-pipeline" class="page">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h2>Pipeline Status</h2>
+          <p>Data files health · scraper trigger · last run info</p>
+        </div>
+        <div class="topbar-right">
+          <button onclick="triggerScrape()" style="background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit">
+            🔄 Run scraper now
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head"><span class="card-title">Data files</span></div>
+          <div id="file-status" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">Last scraper run</span></div>
+          <div id="scraper-detail" style="font-size:13px;color:var(--muted)">Loading...</div>
+          <div id="scraper-log" style="margin-top:12px;font-size:11px;font-family:monospace;background:rgba(0,0,0,.3);padding:10px;border-radius:6px;max-height:200px;overflow-y:auto;color:#9ca3af;display:none"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────────────────────────
+let allAnomalies = [];
+let stockChartInst = null;
+let volChartInst   = null;
+let timelineInst   = null;
+let statusInst     = null;
+
+// ── API HELPER ───────────────────────────────────────────────────────────────
+async function api(path) {
+  const r = await fetch(path);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── PAGE NAV ─────────────────────────────────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  updateClock();
+  setInterval(updateClock, 60000);
+
+  // Trigger scrape on load (non-blocking)
+  triggerScrapeQuiet();
+
+  // Load all data
+  await Promise.all([
+    loadKPIs(),
+    loadAnomalies(),
+    loadTimeline(),
+    loadHomeNews(),
+    loadAllNews(),
+    loadTickerList(),
+    pollScraperStatus(),
+  ]);
+});
+
+function updateClock() {
+  document.getElementById('sidebar-time').textContent =
+    new Date().toLocaleString('fr-TN', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+// ── SCRAPER ──────────────────────────────────────────────────────────────────
+async function triggerScrapeQuiet() {
+  try {
+    const bar = document.getElementById('scraper-bar');
+    bar.style.display = 'flex';
+    document.getElementById('scraper-msg').textContent = '🔄 Checking for latest data...';
+    await fetch('/api/scrape', {method:'POST'});
+    pollScraperStatus();
+  } catch(e) { /* silent */ }
+}
+
+async function triggerScrape() {
+  await triggerScrapeQuiet();
+  showPage('pipeline', document.querySelector('[onclick*=pipeline]'));
+}
+
+async function pollScraperStatus() {
+  try {
+    const s = await api('/api/scrape/status');
+    const bar = document.getElementById('scraper-bar');
+    const msg = document.getElementById('scraper-msg');
+    const time = document.getElementById('scraper-time');
+
+    if (s.running) {
+      bar.style.display = 'flex';
+      bar.className = 'scraper-bar';
+      msg.textContent = '🔄 Scraper running — fetching latest BVMT data...';
+      setTimeout(pollScraperStatus, 3000);
+    } else if (s.last_status === 'success') {
+      bar.style.display = 'flex';
+      bar.className = 'scraper-bar success';
+      msg.textContent = '✅ Data updated successfully';
+      time.textContent = s.last_run ? new Date(s.last_run).toLocaleTimeString() : '';
+      setTimeout(() => { bar.style.display = 'none'; }, 5000);
+    } else if (s.last_status === 'error') {
+      bar.className = 'scraper-bar error';
+      msg.textContent = '⚠️ Scraper unavailable — showing cached data';
+      setTimeout(() => { bar.style.display = 'none'; }, 6000);
+    } else if (s.last_status === 'never') {
+      // No scraper configured yet — hide bar
+      bar.style.display = 'none';
+    }
+
+    // Update pipeline page
+    updatePipelineDetail(s);
+    document.getElementById('sidebar-status').textContent =
+      s.running ? '🔄 Updating...' : s.last_status === 'success' ? '✅ Data current' : '📦 Cached data';
+  } catch(e) {}
+}
+
+function updatePipelineDetail(s) {
+  const el = document.getElementById('scraper-detail');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="margin-bottom:8px"><strong>Status:</strong> <span style="color:${s.last_status==='success'?'var(--green)':s.last_status==='error'?'var(--red)':'var(--amber)'}">${s.last_status}</span></div>
+    <div><strong>Last run:</strong> ${s.last_run ? new Date(s.last_run).toLocaleString() : 'Never'}</div>
+    <div style="margin-top:4px"><strong>Running now:</strong> ${s.running ? '🔄 Yes' : 'No'}</div>
+  `;
+  if (s.log && s.log.length > 0) {
+    const logEl = document.getElementById('scraper-log');
+    logEl.style.display = 'block';
+    logEl.textContent = s.log.join('\n');
+  }
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────────
+async function loadKPIs() {
+  try {
+    const d = await api('/api/kpis');
+    document.getElementById('kpi-tickers').textContent  = d.n_tickers.toLocaleString();
+    document.getElementById('kpi-news').textContent     = d.n_news.toLocaleString();
+    document.getElementById('kpi-flagged').textContent  = d.flagged_30d.toLocaleString();
+    document.getElementById('kpi-triage').textContent   = d.triage_rate + '%';
+    document.getElementById('kpi-triage-delta').textContent =
+      `${d.explained.toLocaleString()} of ${d.total_classified.toLocaleString()} classified`;
+    document.getElementById('badge-flagged').innerHTML =
+      `<span class="pulse"></span> ${d.flagged_30d} anomalies (30d)`;
+    document.getElementById('kpi-news-delta').textContent = 'scraped from ilboursa.com';
+  } catch(e) { console.error('KPI load error:', e); }
+}
+
+// ── TIMELINE CHART ────────────────────────────────────────────────────────────
+async function loadTimeline() {
+  try {
+    const data = await api('/api/anomalies/timeline');
+    if (!data.length) return;
+
+    const labels = data.map(d => d.date);
+    const counts = data.map(d => d.count);
+
+    const ctx = document.getElementById('timelineChart').getContext('2d');
+    if (timelineInst) timelineInst.destroy();
+    timelineInst = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Anomalies',
+          data: counts,
+          backgroundColor: 'rgba(239,68,68,0.5)',
+          borderColor: '#ef4444',
+          borderWidth: 1,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw} anomalies` } } },
+        scales: {
+          x: { ticks: { color:'#6b7280', font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:12 }, grid:{color:'rgba(255,255,255,.04)'} },
+          y: { ticks: { color:'#6b7280', font:{size:11} }, grid:{color:'rgba(255,255,255,.04)'}, beginAtZero:true }
+        }
+      }
+    });
+  } catch(e) { console.error('Timeline error:', e); }
+}
+
+// ── STATUS PIE CHART ──────────────────────────────────────────────────────────
+function drawStatusChart(anomalies) {
+  const counts = { UNEXPLAINED: 0, NEWS_EXPLAINED: 0, OTHER: 0 };
+  anomalies.forEach(a => {
+    if (a.status === 'UNEXPLAINED') counts.UNEXPLAINED++;
+    else if (a.status === 'NEWS_EXPLAINED') counts.NEWS_EXPLAINED++;
+    else counts.OTHER++;
+  });
+  const ctx = document.getElementById('statusChart').getContext('2d');
+  if (statusInst) statusInst.destroy();
+  statusInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Unexplained', 'News-explained', 'Other'],
+      datasets: [{ data: [counts.UNEXPLAINED, counts.NEWS_EXPLAINED, counts.OTHER],
+        backgroundColor: ['#ef4444','#3b82f6','#6b7280'], borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: { legend: { position:'bottom', labels:{ color:'#9ca3af', font:{size:11}, padding:12 } }, tooltip:{} }
+    }
+  });
+}
+
+// ── TOP TICKERS ───────────────────────────────────────────────────────────────
+function drawTopTickers(anomalies) {
+  const counts = {};
+  anomalies.forEach(a => { counts[a.symbole] = (counts[a.symbole]||0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max = sorted[0]?.[1] || 1;
+  const el = document.getElementById('top-tickers-list');
+  el.innerHTML = sorted.map(([sym,cnt]) => `
+    <div class="sector-row">
+      <div class="sector-label"><span class="ticker-pill">${sym}</span></div>
+      <div class="sector-bg"><div class="sector-fill" style="width:${Math.round(cnt/max*100)}%"></div></div>
+      <div class="sector-pct">${cnt}</div>
+    </div>
+  `).join('');
+}
+
+// ── ANOMALIES ─────────────────────────────────────────────────────────────────
+async function loadAnomalies() {
+  try {
+    allAnomalies = await api('/api/anomalies');
+    renderAnomalies(allAnomalies);
+    drawStatusChart(allAnomalies);
+    drawTopTickers(allAnomalies);
+  } catch(e) { console.error('Anomalies error:', e); }
+}
+
+function filterAnomalies(filter, el) {
+  document.querySelectorAll('#page-anomalies .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (filter === 'all') return renderAnomalies(allAnomalies);
+  if (filter === 'High') return renderAnomalies(allAnomalies.filter(a => a.risk === 'High'));
+  renderAnomalies(allAnomalies.filter(a => a.status === filter));
+}
+
+function renderAnomalies(data) {
+  const tbody = document.getElementById('anomaly-tbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="big">✅</div>No anomalies in this filter.</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(a => {
+    const vz = a.volume_zscore !== null ? a.volume_zscore : '—';
+    const rz = a.return_zscore !== null ? a.return_zscore : '—';
+    const maxZ = a.max_zscore || 0;
+    const barW = Math.min(100, Math.round(Math.abs(maxZ)/5*100));
+    const barCol = a.risk==='High'?'#ef4444':a.risk==='Medium'?'#f59e0b':'#10b981';
+    const newsHtml = a.matched_headline
+      ? `<a href="#" onclick="searchStockDirect('${a.symbole}');return false" title="${a.matched_headline}" style="max-width:200px;display:inline-block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--accent)">📰 ${a.matched_headline.slice(0,40)}…</a>`
+      : '<span style="color:var(--muted)">—</span>';
+    return `<tr>
+      <td>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span class="ticker-pill">${a.symbole}</span>
+          <span style="font-size:10px;color:var(--muted)">${(a.ticker_name||'').slice(0,22)}</span>
+        </div>
+      </td>
+      <td style="color:var(--muted)">${a.date}</td>
+      <td>
+        <div class="zbar">
+          <div class="zbar-bg"><div class="zbar-fill" style="width:${barW}%;background:${barCol}"></div></div>
+          <span style="font-size:12px;font-weight:500">${vz}</span>
+        </div>
+      </td>
+      <td style="font-size:12px">${rz}</td>
+      <td style="font-size:12px;color:var(--muted)">${a.signal}</td>
+      <td><span class="chip ${a.risk==='High'?'high':a.risk==='Medium'?'med':'low'}">${a.risk}</span></td>
+      <td><span class="chip ${a.status==='NEWS_EXPLAINED'?'explained':a.status==='UNEXPLAINED'?'high':'med'}">${a.status||'—'}</span></td>
+      <td>${newsHtml}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── NEWS ──────────────────────────────────────────────────────────────────────
+async function loadHomeNews() {
+  try {
+    const news = await api('/api/news/recent');
+    renderNewsTo('home-news', news.slice(0, 8));
+  } catch(e) {}
+}
+
+async function loadAllNews() {
+  try {
+    const news = await api('/api/news/recent');
+    document.getElementById('news-count').textContent = news.length;
+    renderNewsTo('all-news', news);
+  } catch(e) {}
+}
+
+function renderNewsTo(elId, news) {
+  const el = document.getElementById(elId);
+  if (!news.length) { el.innerHTML = '<div class="empty">No news found</div>'; return; }
+  el.innerHTML = news.map(n => {
+    const isRecent = true;
+    return `<div class="news-item ${isRecent?'lo':'med'}">
+      <div class="news-title">
+        <a href="${n.url}" target="_blank" rel="noopener">${n.headline}</a>
+      </div>
+      <div class="news-meta">
+        <span class="ticker-pill" style="font-size:10px;padding:1px 6px">${n.symbole}</span>
+        &nbsp;${n.date} ${n.time}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── TICKER AUTOCOMPLETE ───────────────────────────────────────────────────────
+async function loadTickerList() {
+  try {
+    const tickers = await api('/api/tickers');
+    const dl = document.getElementById('tickers-list');
+    dl.innerHTML = tickers.map(t => `<option value="${t.symbole}" label="${t.symbole} — ${t.name}">`).join('');
+  } catch(e) {}
+}
+
+// ── STOCK SEARCH ──────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('stock-input') === document.activeElement) {
+    searchStock();
+  }
+});
+
+function searchStockDirect(sym) {
+  document.getElementById('stock-input').value = sym;
+  showPage('search', document.querySelector('[onclick*=search]'));
+  searchStock();
+}
+
+async function searchStock() {
+  const ticker = document.getElementById('stock-input').value.trim().toUpperCase();
+  if (!ticker) return;
+
+  document.getElementById('stock-empty').style.display = 'none';
+  document.getElementById('stock-result').style.display = 'none';
+
+  try {
+    const [data, news] = await Promise.all([
+      api(`/api/stock/${ticker}`),
+      api(`/api/news/by_ticker?ticker=${ticker}`)
+    ]);
+
+    if (!data.length) {
+      document.getElementById('stock-empty').style.display = 'block';
+      document.getElementById('stock-empty').innerHTML = `<div class="big">❌</div>No data found for <strong>${ticker}</strong>.`;
+      return;
+    }
+
+    // Header
+    document.getElementById('stock-result').style.display = 'block';
+    document.getElementById('stock-name').textContent = ticker;
+    const last = data[data.length - 1];
+    const highs = data.map(d => d.haut).filter(Boolean);
+    const lows  = data.map(d => d.bas).filter(Boolean);
+    document.getElementById('stock-sub').textContent = `${data.length} trading days · last update: ${last.date}`;
+    document.getElementById('sm-close').textContent = last.cloture?.toFixed(3) + ' TND';
+    document.getElementById('sm-vol').textContent   = last.volume?.toLocaleString();
+    document.getElementById('sm-high').textContent  = Math.max(...highs).toFixed(3) + ' TND';
+    document.getElementById('sm-low').textContent   = Math.min(...lows).toFixed(3) + ' TND';
+
+    // Price chart
+    const labels   = data.map(d => d.date);
+    const closes   = data.map(d => d.cloture);
+    const anomDots = data.map(d => d.anomaly ? d.cloture : null);
+
+    if (stockChartInst) stockChartInst.destroy();
+    const sCtx = document.getElementById('stockChart').getContext('2d');
+    stockChartInst = new Chart(sCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Close', data: closes, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)',
+            borderWidth:2, tension:.2, pointRadius:0, pointHoverRadius:4 },
+          { label: 'Anomaly', data: anomDots, type:'scatter',
+            pointRadius:5, pointBackgroundColor:'#ef4444', pointBorderColor:'#ef4444',
+            showLine:false }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{mode:'index',intersect:false} },
+        scales:{
+          x:{ticks:{color:'#6b7280',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{ticks:{color:'#6b7280',font:{size:11},callback:v=>v.toFixed(2)+' TND'},grid:{color:'rgba(255,255,255,.04)'}}
+        }
+      }
+    });
+
+    // Volume chart
+    const vols = data.map(d => d.volume);
+    const volColors = data.map(d => d.anomaly ? 'rgba(239,68,68,0.7)' : 'rgba(59,130,246,0.4)');
+    if (volChartInst) volChartInst.destroy();
+    const vCtx = document.getElementById('volChart').getContext('2d');
+    volChartInst = new Chart(vCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Volume', data: vols, backgroundColor: volColors, borderRadius: 2 }]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ticks:{color:'#6b7280',font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{ticks:{color:'#6b7280',font:{size:11},callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(255,255,255,.04)'}}
+        }
+      }
+    });
+
+    // News
+    renderNewsTo('stock-news', news);
+
+  } catch(e) {
+    document.getElementById('stock-empty').style.display = 'block';
+    document.getElementById('stock-empty').innerHTML = `<div class="big">⚠️</div>${e.message}`;
+  }
+}
+
+// ── PIPELINE PAGE ─────────────────────────────────────────────────────────────
+async function loadPipelineFiles() {
+  try {
+    const s = await api('/api/status');
+    const el = document.getElementById('file-status');
+    const files = {
+      '_all_tickers_combined.csv': 'All tickers OHLCV',
+      '_all_news_combined.csv':    'News archive',
+      'anomaly_flags.csv':         'Anomaly flags',
+      'anomaly_classified.csv':    'Classified anomalies',
+      'anomaly_summary.csv':       'Summary report',
+    };
+    const keyMap = {
+      '_all_tickers_combined.csv': 'tickers',
+      '_all_news_combined.csv': 'news',
+      'anomaly_flags.csv': 'anomaly_flags',
+      'anomaly_classified.csv': 'anomaly_classified',
+      'anomaly_summary.csv': 'anomaly_summary',
+    };
+    el.innerHTML = Object.entries(files).map(([f, label]) => {
+      const ok = s.files[keyMap[f]];
+      return `<div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted)">${label} <span style="font-family:monospace;font-size:11px">(${f})</span></span>
+        <span class="badge ${ok?'green':'red'}">${ok?'✓ Found':'✗ Missing'}</span>
+      </div>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// Load pipeline files when that page is shown
+document.querySelector('[onclick*=pipeline]').addEventListener('click', loadPipelineFiles);
+</script>
+</body>
+</html>
