@@ -8,6 +8,6 @@ services:
       - key: DATA_DIR
         value: ./data/bvmt_data
       - key: SCRAPER_SCRIPT
-        value: ./scraper/run_pipeline.py
+        value: ./scraper/run_all.py
       - key: PYTHON_VERSION
         value: 3.11.0
