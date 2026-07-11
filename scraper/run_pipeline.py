@@ -13,7 +13,10 @@ import os
 
 # ── OPTION A: Call your existing main scraper script ────────────────────────
 # Change this path to wherever your pipeline entry point is
-PIPELINE_SCRIPT = r"C:\Users\Mega Pc\Desktop\data\run_all.py"
+PIPELINE_SCRIPT = os.environ.get(
+    "PIPELINE_SCRIPT",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "run_all.py")),
+)
 
 if __name__ == "__main__":
     print(f"[Scraper] Starting pipeline: {PIPELINE_SCRIPT}")

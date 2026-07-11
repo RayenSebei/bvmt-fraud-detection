@@ -1,7 +1,7 @@
 --only-binary=:all:
 flask==3.0.3
 flask-cors==4.0.1
-pandas==2.1.4
+pandas==2.3.3
 gunicorn==22.0.0
 requests
 beautifulsoup4
