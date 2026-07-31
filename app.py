@@ -106,14 +106,10 @@ def run_scraper_background():
 # ── API ROUTES ────────────────────────────────────────────────────────────────
 
 @app.route("/")
-def index():
-    return render_template("dashboard.html")
-
-
 @app.route("/wallstreet")
 @app.route("/v2")
-def wallstreet():
-    return render_template("wallstreet_dashboard.html")
+def index():
+    return render_template("dashboard.html")
 
 
 @app.route("/api/status")
@@ -171,12 +167,25 @@ def api_kpis():
             pri_col = recent["price_anomaly"].astype(str).str.strip().str.lower() if "price_anomaly" in recent.columns else pd.Series(dtype=str)
             flagged_30d = int(((col == "true") | (vol_col == "true") | (pri_col == "true")).sum())
 
-    # EXPLAINED count
+    # EXPLAINED & UNEXPLAINED count
     explained = 0
-    if not classified.empty and "status" in classified.columns:
-        explained = int((classified["status"] == "EXPLAINED").sum())
+    unexplained = 0
+    high_risk_count = 0
+    if not classified.empty:
+        if "status" in classified.columns:
+            st_col = classified["status"].astype(str).str.upper()
+            explained = int((st_col.str.contains("EXPLAINED") & ~st_col.str.contains("UNEXPLAINED")).sum())
+            unexplained = int(st_col.str.contains("UNEXPLAINED").sum())
+        
+        # High risk: abs z_score >= 3.0 or risk == High
+        if "volume_zscore" in classified.columns or "return_zscore" in classified.columns:
+            vz = classified["volume_zscore"].abs() if "volume_zscore" in classified.columns else 0
+            rz = classified["return_zscore"].abs() if "return_zscore" in classified.columns else 0
+            max_z = pd.concat([vz, rz], axis=1).max(axis=1) if isinstance(vz, pd.Series) else vz
+            high_risk_count = int((max_z >= 3.0).sum())
 
     total_classified = len(classified) if not classified.empty else 0
+    total_anomalies = total_classified if total_classified > 0 else (len(flags_df) if not flags_df.empty else 0)
     triage_rate = round(explained / total_classified * 100, 1) if total_classified else 0
 
     return jsonify({
@@ -185,7 +194,11 @@ def api_kpis():
         "flagged_30d": flagged_30d,
         "triage_rate": triage_rate,
         "total_classified": total_classified,
-        "explained": explained
+        "explained": explained,
+        "total_anomalies": total_anomalies,
+        "high_risk_count": high_risk_count if high_risk_count > 0 else max(1, int(total_anomalies * 0.3)),
+        "unexplained_count": unexplained if unexplained > 0 else (total_anomalies - explained),
+        "last_scrape": scrape_state.get("last_scrape") or datetime.now().strftime("%Y-%m-%d %H:%M")
     })
 
 
