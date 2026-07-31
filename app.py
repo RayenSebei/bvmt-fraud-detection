@@ -48,7 +48,7 @@ app.json = NaNSafeJSONProvider(app)
 CORS(app)
 
 # ── DATA DIRECTORY ──────────────────────────────────────────────────────────
-DATA_DIR = Path(os.environ.get("DATA_DIR", "./data"))
+DATA_DIR = Path(os.environ.get("DATA_DIR", "./bvmt_data"))
 
 # ── SCRAPER SCRIPT PATH ──────────────────────────────────────────────────────
 # Point this to your existing scraper/pipeline entry point
