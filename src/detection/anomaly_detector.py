@@ -48,6 +48,13 @@ VOLUME_Z_THRESHOLD = 3.0       # how many std devs above normal = anomaly
 RETURN_Z_THRESHOLD = 3.0       # how many std devs of daily return = large move
 MIN_HISTORY_DAYS = 60          # don't flag anything until baseline is established
 
+# On very stable names, the trailing std can be near-zero, which would make
+# the z-score blow up even for a small move. Flooring the std at a small value
+# keeps the score interpretable without hiding genuine outliers.
+MIN_LOG_VOLUME_STD = 0.10      # floor std of log(1+volume)
+MIN_RETURN_STD = 0.01          # floor return std at 1% (absolute daily return)
+MAX_RETURN_GAP_DAYS = 10       # beyond this, a "daily" return isn't really daily
+
 
 def load_data(path):
     df = pd.read_csv(path)
@@ -72,16 +79,37 @@ def compute_signals(df):
 
         g["daily_return"] = g["cloture"].pct_change()
 
+        # Illiquid BVMT names can go weeks or months between trades. pct_change()
+        # just compares consecutive rows, so a stock reactivating after a long gap
+        # gets its entire multi-month cumulative move treated as a single "daily"
+        # return, which blows up return_zscore (seen: several names hitting
+        # z=20-26 on their first trade back after 150+ day gaps, all on unrelated
+        # dates — a data-gap artifact, not a same-day price move). Null out any
+        # return computed across a gap larger than MAX_RETURN_GAP_DAYS so it
+        # doesn't feed the z-score baseline or get flagged as a spike.
+        gap_days = g["date"].diff().dt.days
+        g.loc[gap_days > MAX_RETURN_GAP_DAYS, "daily_return"] = np.nan
+
         # Volume z-score vs trailing rolling window (excludes current day
-        # from its own baseline via shift(1), avoiding look-ahead/self-bias)
-        roll_mean = g["volume"].shift(1).rolling(VOLUME_ROLLING_WINDOW, min_periods=20).mean()
-        roll_std = g["volume"].shift(1).rolling(VOLUME_ROLLING_WINDOW, min_periods=20).std()
-        g["volume_zscore"] = (g["volume"] - roll_mean) / roll_std.replace(0, np.nan)
+        # from its own baseline via shift(1), avoiding look-ahead/self-bias).
+        # Volume is log-transformed first: raw daily volume for a stock is
+        # heavily right-skewed (long stretches near the typical level, with
+        # occasional multi-hundred-x spikes), so a z-score on the raw values
+        # isn't statistically meaningful — it produces implausible magnitudes
+        # (e.g. Z=700+) on illiquid names instead of a real z-score, which
+        # should rarely exceed ~10-15. log1p compresses that skew so the
+        # z-score reflects how unusual the spike actually is.
+        log_volume = np.log1p(g["volume"])
+        roll_mean = log_volume.shift(1).rolling(VOLUME_ROLLING_WINDOW, min_periods=20).mean()
+        roll_std = log_volume.shift(1).rolling(VOLUME_ROLLING_WINDOW, min_periods=20).std()
+        roll_std_safe = roll_std.where(roll_std > MIN_LOG_VOLUME_STD, MIN_LOG_VOLUME_STD)
+        g["volume_zscore"] = (log_volume - roll_mean) / roll_std_safe.replace(0, np.nan)
 
         # Return z-score vs trailing rolling window of returns
         ret_roll_mean = g["daily_return"].shift(1).rolling(VOLUME_ROLLING_WINDOW, min_periods=20).mean()
         ret_roll_std = g["daily_return"].shift(1).rolling(VOLUME_ROLLING_WINDOW, min_periods=20).std()
-        g["return_zscore"] = (g["daily_return"] - ret_roll_mean) / ret_roll_std.replace(0, np.nan)
+        ret_std_safe = ret_roll_std.where(ret_roll_std > MIN_RETURN_STD, MIN_RETURN_STD)
+        g["return_zscore"] = (g["daily_return"] - ret_roll_mean) / ret_std_safe.replace(0, np.nan)
 
         g["volume_anomaly"] = g["volume_zscore"] > VOLUME_Z_THRESHOLD
         g["price_anomaly"] = g["return_zscore"].abs() > RETURN_Z_THRESHOLD
