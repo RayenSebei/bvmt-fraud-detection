@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BVMT Quantum Surveillance Terminal | Wall Street Edition</title>
+  <title>BVMT Quantum Surveillance Terminal | Corporate Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
@@ -337,7 +337,6 @@
     }
 
     .sys-ok { color: var(--success); font-weight: 600; }
-    .sys-warn { color: var(--gold); font-weight: 600; }
 
     /* Content Area */
     .main-content {
@@ -349,7 +348,7 @@
     .page-section { display: none; }
     .page-section.active { display: block; }
 
-    /* Metric Grid (KPIs) */
+    /* Metric Grid (KPIs) - Inside Overview Only */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -397,19 +396,14 @@
       letter-spacing: 0.5px;
     }
 
-    .kpi-icon {
-      width: 30px;
-      height: 30px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--primary);
+    .kpi-icon-svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--primary);
     }
 
-    .danger-card .kpi-icon { background: var(--danger-glow); color: var(--danger); }
-    .gold-card .kpi-icon { background: var(--gold-glow); color: var(--gold); }
+    .danger-card .kpi-icon-svg { stroke: var(--danger); }
+    .gold-card .kpi-icon-svg { stroke: var(--gold); }
 
     .kpi-value {
       font-family: var(--font-mono);
@@ -428,8 +422,15 @@
       gap: 6px;
     }
 
-    .trend-up { color: var(--danger); font-weight: 600; }
-    .trend-down { color: var(--success); font-weight: 600; }
+    .trend-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .trend-danger { background: rgba(255,42,95,0.15); color: var(--danger); }
+    .trend-gold { background: rgba(245,158,11,0.15); color: var(--gold); }
 
     /* Layout Grids */
     .grid-main {
@@ -475,12 +476,6 @@
       font-weight: 700;
       color: #fff;
       letter-spacing: 0.2px;
-    }
-
-    .card-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
     }
 
     .card-tag {
@@ -733,11 +728,10 @@
     <div class="ticker-tape-title">BVMT LIVE</div>
     <div class="ticker-track" id="ticker-track">
       <!-- Dynamically filled with real BVMT anomalies -->
-      <div class="ticker-item"><span class="ticker-symbol">BIAT</span> <span class="ticker-val">Z = +4.12</span> <span class="ticker-alert">⚠️ HIGH VOLATILITY</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">BIAT</span> <span class="ticker-val">Z = +4.12</span> <span class="ticker-alert">HIGH VOLATILITY</span></div>
       <div class="ticker-item"><span class="ticker-symbol">SFBT</span> <span class="ticker-val">Z = +3.85</span> <span class="ticker-up">VOLUME SURGE</span></div>
       <div class="ticker-item"><span class="ticker-symbol">BNA</span> <span class="ticker-val">Z = +3.10</span> <span class="ticker-alert">UNEXPLAINED</span></div>
       <div class="ticker-item"><span class="ticker-symbol">SAH</span> <span class="ticker-val">Z = +2.95</span> <span class="ticker-up">NEWS MATCHED</span></div>
-      <div class="ticker-item"><span class="ticker-symbol">CC</span> <span class="ticker-val">Z = +2.70</span> <span class="ticker-down">PRICE SPIKE</span></div>
     </div>
   </div>
 
@@ -754,7 +748,8 @@
     <div class="header-actions">
       <div class="clock-display" id="tunis-clock">TUNIS: --:--:-- UTC+1</div>
       <button class="btn btn-primary" onclick="triggerScraper()">
-        ⚡ Run Scraper Pipeline
+        <svg style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.5;" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Run Scraper Pipeline
       </button>
     </div>
   </header>
@@ -797,7 +792,7 @@
       <div class="sidebar-widget">
         <div class="widget-title">
           <span>PIPELINE HEALTH</span>
-          <span class="sys-ok" id="pipe-dot">● ONLINE</span>
+          <span class="sys-ok" id="pipe-dot">ONLINE</span>
         </div>
         <div class="sys-status-list">
           <div class="sys-row"><span>Tickers Engine</span> <span class="sys-ok" id="st-tickers">Ready</span></div>
@@ -810,48 +805,48 @@
     <!-- MAIN CONTENT AREA -->
     <main class="main-content">
 
-      <!-- EXECUTIVE KPI GRID -->
-      <div class="kpi-grid">
-        <div class="kpi-card danger-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Total Anomalies</span>
-            <div class="kpi-icon">⚡</div>
-          </div>
-          <div class="kpi-value" id="kpi-total">--</div>
-          <div class="kpi-footer"><span class="trend-up">▲ Active</span> Flagged volume/price spikes</div>
-        </div>
-
-        <div class="kpi-card danger-card">
-          <div class="kpi-header">
-            <span class="kpi-title">High Risk Alerts</span>
-            <div class="kpi-icon">🚨</div>
-          </div>
-          <div class="kpi-value" id="kpi-highrisk" style="color: var(--danger);">--</div>
-          <div class="kpi-footer"><span class="trend-up">Z-Score &ge; 3.0</span> Severe anomalies</div>
-        </div>
-
-        <div class="kpi-card gold-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Unexplained Spikes</span>
-            <div class="kpi-icon">🔍</div>
-          </div>
-          <div class="kpi-value" id="kpi-unexplained" style="color: var(--gold);">--</div>
-          <div class="kpi-footer">No matching news disclosure</div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-title">Scraper Pipeline</span>
-            <div class="kpi-icon">🔄</div>
-          </div>
-          <div class="kpi-value" id="kpi-scrape-status" style="font-size: 16px; margin-top: 6px;">Idle</div>
-          <div class="kpi-footer" id="kpi-last-scrape">Last run: Ready</div>
-        </div>
-      </div>
-
       <!-- PAGE 1: COMMAND CENTER -->
       <div id="page-overview" class="page-section active">
         
+        <!-- EXECUTIVE KPI GRID (Overview Only) -->
+        <div class="kpi-grid">
+          <div class="kpi-card danger-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Anomalies</span>
+              <svg class="kpi-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div class="kpi-value" id="kpi-total">--</div>
+            <div class="kpi-footer"><span class="trend-badge trend-danger">FLAGGED</span> Volume & price spikes</div>
+          </div>
+
+          <div class="kpi-card danger-card">
+            <div class="kpi-header">
+              <span class="kpi-title">High Risk Alerts</span>
+              <svg class="kpi-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01"/></svg>
+            </div>
+            <div class="kpi-value" id="kpi-highrisk" style="color: var(--danger);">--</div>
+            <div class="kpi-footer"><span class="trend-badge trend-danger">Z-SCORE &ge; 4.0</span> Severe anomalies</div>
+          </div>
+
+          <div class="kpi-card gold-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Unexplained Spikes</span>
+              <svg class="kpi-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <div class="kpi-value" id="kpi-unexplained" style="color: var(--gold);">--</div>
+            <div class="kpi-footer"><span class="trend-badge trend-gold">NO DISCLOSURE</span> Requires audit</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Scraper Pipeline</span>
+              <svg class="kpi-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            </div>
+            <div class="kpi-value" id="kpi-scrape-status" style="font-size: 16px; margin-top: 6px; color: var(--success);">READY</div>
+            <div class="kpi-footer" id="kpi-last-scrape">Status: Standby</div>
+          </div>
+        </div>
+
         <div class="grid-main">
           <!-- Timeline & Volatility Chart Card -->
           <div class="card">
@@ -930,9 +925,9 @@
             </div>
             <div class="filters-bar" style="margin-bottom:0;">
               <button class="filter-btn active" onclick="filterAnomalyList('all', this)">All Incidents</button>
-              <button class="filter-btn" onclick="filterAnomalyList('High', this)">🔥 High Risk</button>
-              <button class="filter-btn" onclick="filterAnomalyList('UNEXPLAINED', this)">⚠️ Unexplained</button>
-              <button class="filter-btn" onclick="filterAnomalyList('NEWS_EXPLAINED', this)">✅ Explained</button>
+              <button class="filter-btn" onclick="filterAnomalyList('High', this)">High Risk</button>
+              <button class="filter-btn" onclick="filterAnomalyList('UNEXPLAINED', this)">Unexplained</button>
+              <button class="filter-btn" onclick="filterAnomalyList('EXPLAINED', this)">Explained</button>
             </div>
           </div>
 
@@ -966,7 +961,8 @@
             </div>
             <div class="search-box">
               <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-              <input type="text" id="ticker-search-input" class="search-input" placeholder="Search Ticker (e.g. BIAT, SFBT)..." oninput="onTickerSearch(this.value)">
+              <input type="text" id="ticker-search-input" class="search-input" list="tickers-datalist" placeholder="Type or select Ticker (e.g. BIAT, SFBT)..." onchange="onTickerSearch(this.value)" onkeyup="if(event.key==='Enter') onTickerSearch(this.value)">
+              <datalist id="tickers-datalist"></datalist>
             </div>
           </div>
 
@@ -1031,6 +1027,7 @@
   <script>
     // Global State
     let allAnomalies = [];
+    let availableTickers = [];
     let timelineChartInst = null;
     let stockChartInst = null;
 
@@ -1071,12 +1068,13 @@
       const topItems = anomalies.slice(0, 10);
       track.innerHTML = topItems.map(a => {
         const zVal = Number(a.max_zscore || a.volume_zscore || 0).toFixed(2);
-        const alertClass = a.risk === 'High' ? 'ticker-alert' : (a.status === 'UNEXPLAINED' ? 'ticker-down' : 'ticker-up');
+        const isUnexplained = (a.status || '').includes('UNEXPLAINED');
+        const alertClass = a.risk === 'High' ? 'ticker-alert' : (isUnexplained ? 'ticker-down' : 'ticker-up');
         return `
           <div class="ticker-item">
             <span class="ticker-symbol">${a.symbole}</span>
             <span class="ticker-val">Z = +${zVal}</span>
-            <span class="${alertClass}">${a.status || 'SURGE'}</span>
+            <span class="${alertClass}">${a.status || 'VOLATILE'}</span>
           </div>
         `;
       }).join('');
@@ -1087,10 +1085,10 @@
       try {
         // Load KPIs
         const kpis = await api('/api/kpis');
-        document.getElementById('kpi-total').innerText = kpis.total_anomalies || kpis.flagged_30d || kpis.total_classified || 0;
+        document.getElementById('kpi-total').innerText = kpis.total_anomalies || kpis.total_classified || 0;
         document.getElementById('kpi-highrisk').innerText = kpis.high_risk_count || 0;
         document.getElementById('kpi-unexplained').innerText = kpis.unexplained_count || 0;
-        document.getElementById('kpi-last-scrape').innerText = 'Last: ' + (kpis.last_scrape || 'Ready');
+        document.getElementById('kpi-last-scrape').innerText = 'Status: Ready (' + (kpis.last_scrape || 'Ready') + ')';
 
         // Load Status
         const sys = await api('/api/status');
@@ -1173,7 +1171,7 @@
           <td>${a.date}</td>
           <td style="font-family:var(--font-mono); font-weight:700; color:var(--primary);">Z = ${Number(a.max_zscore || a.volume_zscore || 0).toFixed(2)}</td>
           <td><span class="risk-badge ${a.risk === 'High' ? 'risk-high' : 'risk-med'}">${a.risk}</span></td>
-          <td><span class="status-pill ${a.status === 'UNEXPLAINED' ? 'status-unexplained' : 'status-explained'}">${a.status}</span></td>
+          <td><span class="status-pill ${(a.status||'').includes('UNEXPLAINED') ? 'status-unexplained' : 'status-explained'}">${a.status}</span></td>
         </tr>
       `).join('');
     }
@@ -1188,7 +1186,7 @@
           <td style="font-family:var(--font-mono); font-weight:700; color:var(--primary);">Z = ${Number(a.volume_zscore || 0).toFixed(2)}</td>
           <td style="font-family:var(--font-mono); font-weight:700;">Z = ${Number(a.max_zscore || 0).toFixed(2)}</td>
           <td><span class="risk-badge ${a.risk === 'High' ? 'risk-high' : 'risk-med'}">${a.risk}</span></td>
-          <td><span class="status-pill ${a.status === 'UNEXPLAINED' ? 'status-unexplained' : 'status-explained'}">${a.status}</span></td>
+          <td><span class="status-pill ${(a.status||'').includes('UNEXPLAINED') ? 'status-unexplained' : 'status-explained'}">${a.status}</span></td>
           <td style="max-width:280px; font-size:11.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             ${a.matched_headline || a.headline || 'No matching disclosure'}
           </td>
@@ -1201,9 +1199,15 @@
       document.querySelectorAll('#page-anomalies .filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      if (filter === 'all') renderFullAnomalies(allAnomalies);
-      else if (filter === 'High') renderFullAnomalies(allAnomalies.filter(a => a.risk === 'High'));
-      else renderFullAnomalies(allAnomalies.filter(a => a.status === filter));
+      if (filter === 'all') {
+        renderFullAnomalies(allAnomalies);
+      } else if (filter === 'High') {
+        renderFullAnomalies(allAnomalies.filter(a => a.risk === 'High'));
+      } else if (filter === 'EXPLAINED') {
+        renderFullAnomalies(allAnomalies.filter(a => String(a.status).toUpperCase().includes('EXPLAINED') && !String(a.status).toUpperCase().includes('UNEXPLAINED')));
+      } else if (filter === 'UNEXPLAINED') {
+        renderFullAnomalies(allAnomalies.filter(a => String(a.status).toUpperCase().includes('UNEXPLAINED')));
+      }
     }
 
     // Render Top Tickers Leaderboard
@@ -1229,41 +1233,50 @@
         const wire = document.getElementById('home-news-wire');
         const fullNews = document.getElementById('all-news-container');
 
-        const html = news.map(n => `
+        const renderItems = (items) => items.map(n => `
           <div class="news-item">
             <div class="news-meta">
-              <span class="ticker-pill">${n.ticker || 'BVMT'}</span>
-              <span class="news-date">${n.date || ''}</span>
+              <span class="ticker-pill">${n.symbole || n.ticker || 'BVMT'}</span>
+              <span class="news-date">${n.date || ''} ${n.time || ''}</span>
             </div>
             <a href="${n.url || '#'}" target="_blank" class="news-title">${n.headline || n.title}</a>
-            <p class="news-snippet">${n.summary || n.content || ''}</p>
           </div>
         `).join('');
 
-        wire.innerHTML = html.slice(0, 5);
-        fullNews.innerHTML = html;
+        wire.innerHTML = renderItems(news.slice(0, 5));
+        fullNews.innerHTML = renderItems(news);
       } catch(e) { console.error(e); }
     }
 
     // Stock Analyzer Ticker Chips & Search
     async function loadTickersList() {
       try {
-        const tickers = await api('/api/tickers');
+        const tickersData = await api('/api/tickers');
+        availableTickers = tickersData.map(t => typeof t === 'object' ? t.symbole : t);
+        
+        // Populate Datalist for autocomplete
+        const datalist = document.getElementById('tickers-datalist');
+        datalist.innerHTML = availableTickers.map(s => `<option value="${s}"></option>`).join('');
+
+        // Populate Chip Buttons
         const container = document.getElementById('ticker-chips');
-        container.innerHTML = tickers.slice(0, 10).map(t => `
-          <button class="filter-btn" onclick="loadStockData('${t}')">${t}</button>
+        container.innerHTML = availableTickers.slice(0, 10).map(s => `
+          <button class="filter-btn" onclick="loadStockData('${s}')">${s}</button>
         `).join('');
       } catch(e) { console.error(e); }
     }
 
     async function loadStockData(ticker) {
+      if (!ticker || typeof ticker !== 'string') return;
+      ticker = ticker.trim().toUpperCase();
+      
       document.getElementById('selected-stock-title').innerText = ticker + ' Anomaly History';
       try {
         const data = await api(`/api/stock/${ticker}`);
         const ctx = document.getElementById('stockChart').getContext('2d');
 
         const labels = data.map(d => d.date);
-        const prices = data.map(d => d.close);
+        const prices = data.map(d => d.cloture || d.close);
         const volumes = data.map(d => d.volume);
 
         if (stockChartInst) stockChartInst.destroy();
@@ -1304,7 +1317,7 @@
         const sNews = await api(`/api/news/by_ticker?ticker=${ticker}`);
         document.getElementById('stock-news-list').innerHTML = sNews.map(n => `
           <div class="news-item">
-            <div class="news-meta"><span class="news-date">${n.date}</span></div>
+            <div class="news-meta"><span class="news-date">${n.date || ''}</span></div>
             <a href="${n.url || '#'}" target="_blank" class="news-title">${n.headline || n.title}</a>
           </div>
         `).join('') || '<div style="padding:10px; color:var(--text-muted);">No news found for ticker</div>';
@@ -1315,7 +1328,7 @@
           <tr>
             <td>${a.date}</td>
             <td style="color:var(--primary); font-weight:700;">Z = ${Number(a.max_zscore||a.volume_zscore||0).toFixed(2)}</td>
-            <td><span class="status-pill ${a.status==='UNEXPLAINED'?'status-unexplained':'status-explained'}">${a.status}</span></td>
+            <td><span class="status-pill ${(a.status||'').includes('UNEXPLAINED') ? 'status-unexplained' : 'status-explained'}">${a.status}</span></td>
           </tr>
         `).join('') || '<tr><td colspan="3">No anomalies recorded</td></tr>';
 
@@ -1323,15 +1336,17 @@
     }
 
     function onTickerSearch(val) {
-      if (val && val.trim().length >= 2) {
-        loadStockData(val.trim().toUpperCase());
+      if (!val) return;
+      val = val.trim().toUpperCase();
+      if (availableTickers.length === 0 || availableTickers.includes(val)) {
+        loadStockData(val);
       }
     }
 
     async function triggerScraper() {
       try {
         await api('/api/scrape', { method: 'POST' });
-        alert('⚡ Scraper pipeline triggered successfully! Refreshing data...');
+        alert('Scraper pipeline triggered successfully! Refreshing data...');
         initTerminal();
       } catch(e) { alert('Failed to trigger scraper: ' + e.message); }
     }
