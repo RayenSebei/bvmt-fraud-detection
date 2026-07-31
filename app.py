@@ -48,8 +48,6 @@ app.json = NaNSafeJSONProvider(app)
 CORS(app)
 
 # ── DATA DIRECTORY ──────────────────────────────────────────────────────────
-# On Render: set DATA_DIR env var to your mounted data path
-# Locally:   set DATA_DIR or defaults to ./data
 DATA_DIR = Path(os.environ.get("DATA_DIR", "./data"))
 
 # ── SCRAPER SCRIPT PATH ──────────────────────────────────────────────────────
