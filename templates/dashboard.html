@@ -217,6 +217,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <p>Bourse des Valeurs Mobilières de Tunis · Real data from ilboursa.com</p>
         </div>
         <div class="topbar-right">
+          <button class="btn" style="background:#00f0ff; color:#000; font-weight:700; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;" onclick="window.location.href='/wallstreet'">⚡ Wall Street Mode</button>
           <span id="badge-flagged" class="badge amber"><span class="pulse"></span> Loading...</span>
           <span id="badge-status" class="badge green"><span class="pulse"></span> Pipeline active</span>
         </div>
@@ -248,22 +249,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">Latest news</span>
-            <span class="badge blue" onclick="showPage('news',document.querySelector('[onclick*=news]'))">View all</span>
-          </div>
-          <div id="home-news" class="news-feed"></div>
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Latest news</span>
+          <span class="badge blue" onclick="showPage('news',document.querySelector('[onclick*=news]'))">View all</span>
         </div>
-        <div class="card">
-          <div class="card-head">
-            <span class="card-title">Anomaly status breakdown</span>
-          </div>
-          <div class="chart-wrap" style="height:180px">
-            <canvas id="statusChart" role="img" aria-label="Anomaly status breakdown pie chart"></canvas>
-          </div>
-        </div>
+        <div id="home-news" class="news-feed"></div>
       </div>
     </div>
 
@@ -577,8 +568,9 @@ function drawStatusChart(anomalies) {
     if (a.status === 'UNEXPLAINED') counts.UNEXPLAINED++;
     else if (a.status === 'NEWS_EXPLAINED') counts.NEWS_EXPLAINED++;
     else counts.OTHER++;
-  });
-  const ctx = document.getElementById('statusChart').getContext('2d');
+  const el = document.getElementById('statusChart');
+  if (!el) return;
+  const ctx = el.getContext('2d');
   if (statusInst) statusInst.destroy();
   statusInst = new Chart(ctx, {
     type: 'doughnut',

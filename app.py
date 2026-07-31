@@ -110,6 +110,12 @@ def index():
     return render_template("dashboard.html")
 
 
+@app.route("/wallstreet")
+@app.route("/v2")
+def wallstreet():
+    return render_template("wallstreet_dashboard.html")
+
+
 @app.route("/api/status")
 def api_status():
     """Pipeline health + last scrape info."""
