@@ -4,6 +4,8 @@
 
 Multi-phase market-surveillance pipeline for the Bourse de Valeurs Mobilières de Tunis (BVMT). The project scrapes historical OHLCV and news data, detects volume/price anomalies, cross-checks market-wide moves, and uses AI-assisted triage to prioritize suspicious cases for manual review. It is designed as a research workflow for studying potential insider trading, governance failures, and other event-driven distortions in an emerging-market setting.
 
+> **Disclaimer:** Independent academic project, not affiliated with BVMT, CMF, or any exchange; not investment or legal advice.
+
 ## Table of Contents
 - [Background](#background)
 - [Architecture](#architecture)
