@@ -155,12 +155,18 @@ def api_kpis():
     n_tickers   = tickers_df["symbole"].nunique() if not tickers_df.empty else 0
     n_news      = len(news_df) if not news_df.empty else 0
 
-    # Flagged = combined_anomaly == True in last 30 days
+    # Flagged = combined_anomaly == True in the most recent 30 days of *scraped* data.
+    # Anchored to the latest date actually present in the data, not datetime.now(),
+    # since this is a periodically-scraped dataset, not a live feed. Anchoring to
+    # wall-clock time made this KPI silently drop to 0 between scrapes.
     flagged_30d = 0
     if not flags_df.empty and "date" in flags_df.columns:
         flags_df["date"] = pd.to_datetime(flags_df["date"], errors="coerce")
-        cutoff = datetime.now() - timedelta(days=30)
-        recent = flags_df[flags_df["date"] >= cutoff]
+        latest_date = flags_df["date"].max()
+        recent = pd.DataFrame()
+        if pd.notna(latest_date):
+            cutoff = latest_date - timedelta(days=30)
+            recent = flags_df[flags_df["date"] >= cutoff]
         if "combined_anomaly" in recent.columns:
             col = recent["combined_anomaly"].astype(str).str.strip().str.lower()
             vol_col = recent["volume_anomaly"].astype(str).str.strip().str.lower() if "volume_anomaly" in recent.columns else pd.Series(dtype=str)
@@ -195,8 +201,8 @@ def api_kpis():
         "total_classified": total_classified,
         "explained": explained,
         "total_anomalies": total_anomalies,
-        "high_risk_count": high_risk_count if high_risk_count > 0 else int(total_anomalies * 0.2),
-        "unexplained_count": unexplained if unexplained > 0 else (total_anomalies - explained),
+        "high_risk_count": high_risk_count,
+        "unexplained_count": unexplained,
         "last_scrape": scrape_state.get("last_scrape") or datetime.now().strftime("%Y-%m-%d %H:%M")
     })
 
@@ -265,7 +271,11 @@ def api_anomaly_timeline():
         return jsonify([])
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    cutoff = datetime.now() - timedelta(days=90)
+    latest_date = df["date"].max()
+    if pd.isna(latest_date):
+        return jsonify([])
+    # Anchored to the latest scraped date, not datetime.now() — see note in api_kpis().
+    cutoff = latest_date - timedelta(days=90)
     df = df[df["date"] >= cutoff]
 
     if "combined_anomaly" not in df.columns:
